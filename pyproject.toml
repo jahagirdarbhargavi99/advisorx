@@ -1,0 +1,40 @@
+[project]
+name = "advisorx"
+version = "0.1.0"
+description = "Agentic AI Academic Advisor — production-grade multi-agent system"
+requires-python = ">=3.14"
+
+dependencies = [
+    # Google ADK & Vertex AI
+    "google-adk>=0.3.0",
+    "google-cloud-aiplatform>=1.97.0",
+
+    # Orchestration
+    "langgraph>=0.2.0",
+    "langchain>=0.2.0",
+    "langchain-google-vertexai>=2.1.0",
+
+    # RAG
+    "llama-index>=0.10.0",
+    "llama-index-vector-stores-chroma>=0.1.0",
+    "llama-index-llms-vertex>=0.1.0",
+    "llama-index-embeddings-vertex>=0.1.0",
+    "chromadb>=0.5.0",
+
+    # Data & utilities
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+    "typer>=0.12.0",
+
+    # Evaluation
+    "datasets>=2.0.0",
+    "pandas>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agents", "prompts", "rag", "graph", "tools", "evals", "red_team", "scripts"]
