@@ -208,7 +208,7 @@ def run_single_test(test: dict) -> dict:
         contents=judge_msg,
         config=types.GenerateContentConfig(
             temperature=0.1,
-            max_output_tokens=512,
+            max_output_tokens=1024,
             response_mime_type="application/json",
         ),
     )

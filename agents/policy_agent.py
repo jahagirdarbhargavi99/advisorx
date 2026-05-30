@@ -4,10 +4,12 @@ Policy Agent
 Prompt pattern : RAG with citation enforcement + Chain-of-Thought
 Responsibility : Answer academic policy questions by retrieving relevant
                  policy chunks and reasoning from them with citations.
+                 Includes course existence pre-check to prevent hallucination.
 """
 
 import json
 import os
+import re
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -58,8 +60,34 @@ RETRIEVED POLICY DOCUMENTS:
 Reason through the policy carefully and provide a complete answer with citations."""
 
 
+def check_course_exists(course_id: str) -> bool:
+    """Check if a course exists in the database."""
+    from tools.db_tool import get_course
+    return get_course(course_id) is not None
+
+
+def extract_course_ids_from_query(query: str) -> list:
+    """Extract course IDs like CS999, MATH101 from a query."""
+    return re.findall(r'\b[A-Z]{2,4}\d{3}\b', query.upper())
+
+
 def run_policy_agent(profile: dict, question: str) -> dict:
     from tools.rag_tool import search_policies
+
+    # pre-check: flag any course IDs that don't exist in the catalog
+    mentioned_courses = extract_course_ids_from_query(question)
+    nonexistent = [c for c in mentioned_courses if not check_course_exists(c)]
+    if nonexistent:
+        return {
+            "question": question,
+            "policy_sources": [],
+            "reasoning": f"Course(s) {nonexistent} not found in the course catalog.",
+            "answer": f"Course {', '.join(nonexistent)} does not exist in the course catalog. Please check the course ID and try again.",
+            "action_steps": ["Verify the course ID with the registrar or course catalog"],
+            "caveats": [],
+            "confidence": "high",
+            "retrieved_sources": [],
+        }
 
     # retrieve relevant policy chunks
     policy_results = search_policies(question, n_results=5)
@@ -113,14 +141,14 @@ if __name__ == "__main__":
     profile = run_intake_agent("STU1000")
     profile.pop("_reasoning", None)
 
-    # test 3 different policy questions
-    questions = [
-        "Can I waive CS101 if I took AP Computer Science in high school with a score of 5?",
+    tests = [
+        "Can I take CS999 Advanced Quantum Computing next semester?",
+        "Can I waive CS101 if I took AP Computer Science with a score of 5?",
         "What happens if my GPA drops below 2.0?",
         "How many credits do I need to take to be considered full-time?",
     ]
 
-    for q in questions:
+    for q in tests:
         console.print(f"\n[bold yellow]Q: {q}[/bold yellow]")
         result = run_policy_agent(profile, q)
         console.print(Panel(
